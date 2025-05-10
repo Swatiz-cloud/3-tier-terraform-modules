@@ -411,22 +411,15 @@ output "instance_ids" {
 
 
 ```
-### 🔹 outputs.tf (module/web)
+### 🔹 variables.tf (module/web)
 
-open `modules/web/outputs.tf` and add:
+open `modules/web/variables.tf` and add:
 
 ```hcl
-output "web_instance_ids" {
-  value = module.web.instance_ids
-}
-
-output "app_instance_ids" {
-  value = module.app.instance_ids
-}
-
-output "db_endpoint" {
-  value = module.db.db_endpoint
-}
+variable "ami_id" {}
+variable "instance_type" {}
+variable "public_subnets" {}
+variable "security_group_id" {}
 
 ```
 ### 🔹 main.tf (module/app)
