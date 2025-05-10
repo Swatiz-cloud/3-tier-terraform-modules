@@ -5,28 +5,6 @@ This project demonstrates the creation and deployment of a **3-tier architecture
 
 ---
 
-## 📁 Project Structure
-
-```
-
-3-tier-terraform/
-├── main.tf               # Root Terraform file invoking modules
-├── variables.tf          # Input variable definitions
-├── outputs.tf            # Output variable definitions
-├── terraform.tfvars      # Actual variable values
-├── backend.tf            # Optional backend config for remote state (S3/DynamoDB)
-│
-├── modules/
-│   ├── vpc/              # VPC, Subnets, NAT, IGW
-│   ├── web/              # EC2 instance setup for Web Tier
-│   ├── app/              # EC2 instance setup for App Tier
-│   ├── db/               # RDS MySQL instance setup
-│   └── security/         # Security Groups for all tiers
-
-````
-
----
-
 ## 🧾 Project Overview
 
 This 3-tier architecture follows a widely adopted software design pattern that organizes applications into **Web**, **Application**, and **Database** tiers. Each tier is:
@@ -78,43 +56,233 @@ This 3-tier architecture follows a widely adopted software design pattern that o
 
 ---
 
-## ⚙️ Module Breakdown
+## 📁 Project Structure
 
-### 🔹 `vpc/`
-- VPC, subnets, routing, NAT/IGW
+```
 
-#### 📦 VPC Module main.tf Code Snippet
+3-tier-terraform/
+├── main.tf               # Root Terraform file invoking modules
+├── variables.tf          # Input variable definitions
+├── outputs.tf            # Output variable definitions
+├── terraform.tfvars      # Actual variable values
+├── backend.tf            # Optional backend config for remote state (S3/DynamoDB)
+│
+├── modules/
+│   ├── vpc/              # VPC, Subnets, NAT, IGW
+│   ├── web/              # EC2 instance setup for Web Tier
+│   ├── app/              # EC2 instance setup for App Tier
+│   ├── db/               # RDS MySQL instance setup
+│   └── security/         # Security Groups for all tiers
 
-```hcl(main.tf)
-resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
+````
+
+---
+
+## 🛠 Setup Instructions (Using VS Code)
+
+### 1. Create Project Folder
+- Navigate to Desktop and create a folder named: `3-tier-terraform`.
+
+### 2. Open in VS Code
+- Launch Visual Studio Code.
+- Go to **File > Open Folder**, and open `3-tier-terraform`.
+
+### 3. Create Root Files
+Create the following files:
+- `main.tf`
+- `variables.tf`
+- `outputs.tf`
+- `terraform.tfvars`
+
+### 4. Create Module Structure
+Inside `3-tier-terraform`, create a folder named `modules`.
+Inside `modules`, create these directories:
+- `vpc`
+- `web`
+- `app`
+- `db`
+- `security`
+
+Each module folder should contain its own:
+- `main.tf`
+- `variables.tf`
+- `outputs.tf`
+
+### 5. Initialize Terraform
+```bash
+terraform init
+```
+---
+## 🚀 Step-by-Step Code Setup
+
+This guide walks you through setting up and writing Terraform code for a 3-tier AWS infrastructure using modular design.
+
+---
+
+## 📂 Step 1: Open Root Directory
+
+1. Open the folder `3-tier-terraform` in **Visual Studio Code**.
+2. You should see the following structure:
+
+
+```
+
+3-tier-terraform/
+├── main.tf               # Root Terraform file invoking modules
+├── variables.tf          # Input variable definitions
+├── outputs.tf            # Output variable definitions
+├── terraform.tfvars      # Actual variable values
+├── backend.tf            # Optional backend config for remote state (S3/DynamoDB)
+│
+├── modules/
+│   ├── vpc/              # VPC, Subnets, NAT, IGW
+│   ├── web/              # EC2 instance setup for Web Tier
+│   ├── app/              # EC2 instance setup for App Tier
+│   ├── db/               # RDS MySQL instance setup
+│   └── security/         # Security Groups for all tiers
+
+````
+---
+
+## ✍️ Step 2: Add Code to Root Files
+
+### 🔹 main.tf (Root)
+
+Open `main.tf` and add:
+
+```hcl
+terraform {
+  required_version = "~> 1.1"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+ 
+# Configure the AWS Provider
+provider "aws" {
+  region = var.region
+}
+module "vpc" {
+  source    = "./modules/vpc"
+  region = var.region
+  vpc_cidr  = var.vpc_cidr
+}
+
+module "security" {
+  source = "./modules/security"
+  vpc_id = module.vpc.vpc_id
+}
+
+module "web" {
+  source             = "./modules/web"
+  public_subnets     = module.vpc.public_subnets
+  ami_id             = var.web_ami
+  instance_type      = var.web_instance_type
+  security_group_id  = module.security.web_sg_id
+}
+
+module "app" {
+  source             = "./modules/app"
+  private_subnets    = module.vpc.app_subnets
+  ami_id             = var.app_ami
+  instance_type      = var.app_instance_type
+  security_group_id  = module.security.app_sg_id
+}
+
+module "db" {
+  source             = "./modules/db"
+  db_subnets         = module.vpc.db_subnets
+  db_username        = var.db_username
+  db_password        = var.db_password
+  security_group_id  = module.security.db_sg_id
+}
+```
+### 🔹 variables.tf (Root)
+
+Open `variables.tf` and add:
+
+```hcl
+variable "region" {}
+variable "vpc_cidr" {}
+variable "web_ami" {}
+variable "web_instance_type" {}
+variable "app_ami" {}
+variable "app_instance_type" {}
+variable "db_username" {}
+variable "db_password" {}
+
+```
+### 🔹 outputs.tf (Root)
+
+Open `variables.tf` and add:
+
+```hcl
+output "web_instance_ids" {
+  value = module.web.instance_ids
+}
+
+output "app_instance_ids" {
+  value = module.app.instance_ids
+}
+
+output "db_endpoint" {
+  value = module.db.db_endpoint
+}
+```
+### 🔹 terraforms.tfvars (Root)
+
+Open `variables.tf` and add:
+
+```hcl
+vpc_cidr = "10.0.0.0/16"
+region = "ap-south-1"
+web_ami = "ami-0e35ddab05955cf57"
+app_ami = "ami-0e35ddab05955cf57"
+web_instance_type = "t2.micro"
+app_instance_type = "t2.micro"
+db_username = "admin"
+db_password = "Pass$123"
+```
+
+## 🧱 Step 3: Add Code to Modules
+
+### 🔹 main.tf (module/vpc)
+
+open `modules/vpc/main.tf` and add:
+
+```hcl
+  resource "aws_vpc" "main" {
+  cidr_block = var.vpc_cidr
+  enable_dns_support = true
   enable_dns_hostnames = true
 }
 
-data "aws_availability_zones" "available" {}
-
 resource "aws_subnet" "public" {
-  count                   = 2
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 4, count.index)
+  count = 2
+  vpc_id = aws_vpc.main.id
+  cidr_block = cidrsubnet(var.vpc_cidr, 4, count.index)
   map_public_ip_on_launch = true
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
 }
 
 resource "aws_subnet" "app" {
-  count             = 2
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 4, count.index + 2)
+  count = 2
+  vpc_id = aws_vpc.main.id
+  cidr_block = cidrsubnet(var.vpc_cidr, 4, count.index + 2)
   availability_zone = data.aws_availability_zones.available.names[count.index]
 }
 
 resource "aws_subnet" "db" {
-  count             = 2
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 4, count.index + 4)
+  count = 2
+  vpc_id = aws_vpc.main.id
+  cidr_block = cidrsubnet(var.vpc_cidr, 4, count.index + 4)
   availability_zone = data.aws_availability_zones.available.names[count.index]
 }
+
+data "aws_availability_zones" "available" {}
 
 output "vpc_id" {
   value = aws_vpc.main.id
@@ -133,17 +301,238 @@ output "db_subnets" {
 }
 
 ```
-### 🔹 `security/`
-- Creates security groups for all tiers
+### 🔹 variables.tf (module/vpc)
 
-### 🔹 `web/`
-- Public EC2 with Apache/Nginx and user data script
+open `modules/vpc/variables.tf` and add:
 
-### 🔹 `app/`
-- Private EC2 for backend logic
+```hcl
+variable "vpc_cidr" {}
+variable "region" {}
+```
+### 🔹 main.tf (module/security)
 
-### 🔹 `db/`
-- RDS MySQL, subnet group, and secure access
+open `modules/security/main.tf` and add:
+
+```hcl
+resource "aws_security_group" "web_sg" {
+  name = "web-sg"
+  description = "Allow HTTP"
+  vpc_id = var.vpc_id
+
+  ingress {
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "app_sg" {
+  name = "app-sg"
+  description = "Allow from Web"
+  vpc_id = var.vpc_id
+
+  ingress {
+    from_port = 8080
+    to_port   = 8080
+    protocol  = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+  egress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "db_sg" {
+  name = "db-sg"
+  description = "Allow MySQL from App"
+  vpc_id = var.vpc_id
+
+  ingress {
+    from_port = 3306
+    to_port   = 3306
+    protocol  = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+  egress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+output "web_sg_id" {
+  value = aws_security_group.web_sg.id
+}
+
+output "app_sg_id" {
+  value = aws_security_group.app_sg.id
+}
+
+output "db_sg_id" {
+  value = aws_security_group.db_sg.id
+}
+
+```
+### 🔹 variables.tf (module/security)
+
+open `modules/security/variables.tf` and add:
+
+```hcl
+variable "vpc_id" {}
+```
+### 🔹 main.tf (module/web)
+
+open `modules/web/main.tf` and add:
+
+```hcl
+terraform {
+  required_version = "~> 1.1"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+ 
+# Configure the AWS Provider
+provider "aws" {
+  region = var.region
+}
+module "vpc" {
+  source    = "./modules/vpc"
+  region = var.region
+  vpc_cidr  = var.vpc_cidr
+}
+
+module "security" {
+  source = "./modules/security"
+  vpc_id = module.vpc.vpc_id
+}
+
+module "web" {
+  source             = "./modules/web"
+  public_subnets     = module.vpc.public_subnets
+  ami_id             = var.web_ami
+  instance_type      = var.web_instance_type
+  security_group_id  = module.security.web_sg_id
+}
+
+module "app" {
+  source             = "./modules/app"
+  private_subnets    = module.vpc.app_subnets
+  ami_id             = var.app_ami
+  instance_type      = var.app_instance_type
+  security_group_id  = module.security.app_sg_id
+}
+
+module "db" {
+  source             = "./modules/db"
+  db_subnets         = module.vpc.db_subnets
+  db_username        = var.db_username
+  db_password        = var.db_password
+  security_group_id  = module.security.db_sg_id
+}
+
+```
+### 🔹 outputs.tf (module/web)
+
+open `modules/web/outputs.tf` and add:
+
+```hcl
+output "web_instance_ids" {
+  value = module.web.instance_ids
+}
+
+output "app_instance_ids" {
+  value = module.app.instance_ids
+}
+
+output "db_endpoint" {
+  value = module.db.db_endpoint
+}
+
+```
+### 🔹 main.tf (module/app)
+
+open `modules/app/main.tf` and add:
+
+```hcl
+resource "aws_instance" "app" {
+  count = 2
+  ami = var.ami_id
+  instance_type = var.instance_type
+  subnet_id = element(var.private_subnets, count.index)
+  vpc_security_group_ids = [var.security_group_id]
+  tags = { Name = "app-${count.index+1}" }
+}
+
+output "instance_ids" {
+  value = aws_instance.app[*].id
+}
+
+```
+### 🔹 variables.tf (module/app)
+
+open `modules/app/variables.tf` and add:
+
+```hcl
+variable "ami_id" {} 
+variable "instance_type" {}
+variable "private_subnets" {}
+variable "security_group_id" {}
+```
+### 🔹 variables.tf (module/db)
+
+open `modules/db/main.tf` and add:
+
+```hcl
+resource "aws_db_subnet_group" "db" {
+  name       = "db-subnet-group"
+  subnet_ids = var.db_subnets
+}
+
+resource "aws_db_instance" "mysql" {
+  allocated_storage    = 20
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  #name                 = "appdb"
+  username             = var.db_username
+  password             = var.db_password
+  skip_final_snapshot  = true
+  db_subnet_group_name = aws_db_subnet_group.db.name
+  vpc_security_group_ids = [var.security_group_id]
+  publicly_accessible = false
+}
+
+output "db_endpoint" {
+  value = aws_db_instance.mysql.endpoint
+}
+
+```
+### 🔹 variables.tf (module/db)
+
+open `modules/db/variables.tf` and add:
+
+```hcl
+variable "db_subnets" {}
+variable "db_username" {}
+variable "db_password" {}
+variable "security_group_id" {}
+  
+```
 
 ---
 
