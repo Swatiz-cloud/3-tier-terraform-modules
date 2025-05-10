@@ -65,7 +65,6 @@ This 3-tier architecture follows a widely adopted software design pattern that o
 ├── variables.tf          # Input variable definitions
 ├── outputs.tf            # Output variable definitions
 ├── terraform.tfvars      # Actual variable values
-├── backend.tf            # Optional backend config for remote state (S3/DynamoDB)
 │
 ├── modules/
 │   ├── vpc/              # VPC, Subnets, NAT, IGW
