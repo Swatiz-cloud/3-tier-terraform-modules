@@ -232,9 +232,9 @@ output "db_endpoint" {
   value = module.db.db_endpoint
 }
 ```
-### 🔹 terraforms.tfvars (Root)
+### 🔹 terraform.tfvars (Root)
 
-Open `variables.tf` and add:
+Open `terraform.tf` and add:
 
 ```hcl
 vpc_cidr = "10.0.0.0/16"
