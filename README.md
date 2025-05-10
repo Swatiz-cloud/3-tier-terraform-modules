@@ -1,5 +1,6 @@
 # 🚀 3-Tier Infrastructure Deployment Using Terraform Modules
 
+## Introduction
 This project demonstrates the creation and deployment of a **3-tier architecture** on **Amazon Web Services (AWS)** using **Terraform modules**. It follows industry best practices for modular, scalable, and secure infrastructure as code (IaC).
 
 ---
